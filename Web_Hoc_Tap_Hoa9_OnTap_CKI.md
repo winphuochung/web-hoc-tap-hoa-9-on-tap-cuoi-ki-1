@@ -1344,7 +1344,7 @@ var QUESTIONS = [
     exp:"(RCOO)<sub>3</sub>C<sub>3</sub>H<sub>5</sub> + 3NaOH → 3RCOONa + C<sub>3</sub>H<sub>5</sub>(OH)<sub>3</sub> — sản phẩm là xà phòng (muối sodium của acid béo) và glycerol." }
 ];
 var answers = new Array(QUESTIONS.length).fill(-1);
-var quizStartTime = null;
+var quizStartTime = null, scoreSent = false;
 var quizBox = document.getElementById("quizBox");
 var LETTERS = ["A","B","C","D"];
 function plain(html){ return html.replace(/<[^>]+>/g, ""); }
@@ -1434,7 +1434,16 @@ function doSubmit(){
     ? "🎉 Xuất sắc! Em đạt " + score + "/10 điểm. Em đã nắm chắc kiến thức học kì I rồi — tự tin bước vào bài kiểm tra cuối kì nhé!"
     : "Em đạt " + score + "/10 điểm. Hãy xem lại phần giải thích ở các câu chưa đúng, ôn lại mục Hệ thống kiến thức rồi làm lại nhé!";
   banner.scrollIntoView({ behavior: "smooth", block: "center" });
-  /* CHUA CO LINK WEB APP: chua gan fetch gui diem ve Google Sheets (registry chua co webAppUrl cho khoa hoa9-ontap-cki). Diem hien chi luu localStorage tren may hoc sinh. */
+  if (!scoreSent) {
+    scoreSent = true;
+    try {
+      var secs = Math.max(0, Math.round((Date.now() - (quizStartTime || Date.now())) / 1000));
+      var dur = Math.floor(secs / 60) + " phút " + (secs % 60) + " giây";
+      var detail = QUESTIONS.map(function(item, qi){ return (qi + 1) + ": " + (answers[qi] < 0 ? "-" : LETTERS[answers[qi]]) + "/" + LETTERS[item.ans]; }).join(", ");
+      fetch("https://script.google.com/macros/s/AKfycbyYe6Brw38uCrTWJpI7bTRICZbUionFGGXy0qTDC_4W8M57r6jPOuxDFYrlNxBCExwq/exec", {method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain"}, body: JSON.stringify({name: currentStudent.name, className: currentStudent.cls, score: score, correct: score, detail: detail, duration: dur})}).catch(function(){});
+    } catch (e) {}
+  }
+  
 }
 var quizModal = document.getElementById("quizModal");
 document.getElementById("submitQuiz").addEventListener("click", function(){
@@ -1457,7 +1466,7 @@ document.getElementById("confirmSubmit").addEventListener("click", function(){
 document.getElementById("resetQuiz").addEventListener("click", function(){
   answers = new Array(QUESTIONS.length).fill(-1);
   quizSubmitted = false;
-  quizStartTime = null;
+  scoreSent = false; quizStartTime = null;
   buildQuiz();
   updateAnswered();
   var banner = document.getElementById("scoreBanner");
@@ -1483,7 +1492,7 @@ function enterApp(){
   document.getElementById("bestScore").textContent = bestScore === null ? "—" : bestScore + "/10";
   answers = new Array(QUESTIONS.length).fill(-1);
   quizSubmitted = false;
-   quizStartTime = null;buildQuiz();
+   scoreSent = false; quizStartTime = null;buildQuiz();
   updateAnswered();
   var banner = document.getElementById("scoreBanner");
   banner.className = "score-banner"; banner.textContent = "";
